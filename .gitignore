@@ -1,0 +1,61 @@
+# Terraform working directories, local state and saved plans
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+*.plan
+tfplan
+tfplan.*
+plan.out
+plan.json
+terraform.tfstate.d/
+crash.log
+crash.*.log
+
+# Real inputs and backend settings stay outside Git.
+# Commit synthetic examples using these explicit example suffixes.
+*.tfvars
+*.tfvars.json
+!*.example.tfvars
+!*.example.tfvars.json
+*.tfbackend
+!*.example.tfbackend
+
+# Local overrides and Terraform CLI credentials/configuration
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+.terraform.d/
+credentials.tfrc.json
+
+# Environment files and local credentials
+.env
+.env.*
+!.env.example
+.aws/
+.ssh/
+*.pem
+*.key
+*.p12
+*.pfx
+*.kubeconfig
+kubeconfig
+secrets/
+private/
+backups/
+
+# Local logs and editor/OS files
+*.log
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Keep .terraform.lock.hcl in Git for every deployment root.
