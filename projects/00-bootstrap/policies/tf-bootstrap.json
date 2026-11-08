@@ -1,0 +1,152 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "IdentifySession",
+      "Effect": "Allow",
+      "Action": "sts:GetCallerIdentity",
+      "Resource": "*"
+    },
+    {
+      "Sid": "BrowserLoginFromThisComputer",
+      "Effect": "Allow",
+      "Action": [
+        "signin:AuthorizeOAuth2Access",
+        "signin:CreateOAuth2Token"
+      ],
+      "Resource": [
+        "arn:aws:signin:us-west-2:123456789012:oauth2/public-client/localhost",
+        "arn:aws:signin:us-east-1:123456789012:oauth2/public-client/localhost"
+      ]
+    },
+    {
+      "Sid": "CreateDevStateBucketInOregon",
+      "Effect": "Allow",
+      "Action": "s3:CreateBucket",
+      "Resource": "arn:aws:s3:::terraform-state-123456789012-dev-us-west-2",
+      "Condition": {
+        "StringEquals": {
+          "s3:LocationConstraint": "us-west-2"
+        }
+      }
+    },
+    {
+      "Sid": "CreateProdStateBucketInVirginia",
+      "Effect": "Allow",
+      "Action": "s3:CreateBucket",
+      "Resource": "arn:aws:s3:::terraform-state-123456789012-prod-us-east-1",
+      "Condition": {
+        "Null": {
+          "s3:LocationConstraint": "true"
+        }
+      }
+    },
+    {
+      "Sid": "ReadStateBucketConfiguration",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:GetBucketAcl",
+        "s3:GetBucketCORS",
+        "s3:GetBucketWebsite",
+        "s3:GetBucketLogging",
+        "s3:GetBucketRequestPayment",
+        "s3:GetBucketObjectLockConfiguration",
+        "s3:GetAccelerateConfiguration",
+        "s3:GetReplicationConfiguration",
+        "s3:GetLifecycleConfiguration",
+        "s3:GetBucketPolicy",
+        "s3:GetBucketPolicyStatus",
+        "s3:GetBucketVersioning",
+        "s3:GetBucketTagging",
+        "s3:GetEncryptionConfiguration",
+        "s3:GetBucketOwnershipControls",
+        "s3:GetBucketPublicAccessBlock"
+      ],
+      "Resource": [
+        "arn:aws:s3:::terraform-state-123456789012-dev-us-west-2",
+        "arn:aws:s3:::terraform-state-123456789012-prod-us-east-1"
+      ]
+    },
+    {
+      "Sid": "ManageStateBucketConfiguration",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutBucketVersioning",
+        "s3:PutBucketTagging",
+        "s3:PutEncryptionConfiguration",
+        "s3:PutBucketOwnershipControls",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:PutBucketPolicy",
+        "s3:DeleteBucketPolicy",
+        "s3:DeleteBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::terraform-state-123456789012-dev-us-west-2",
+        "arn:aws:s3:::terraform-state-123456789012-prod-us-east-1"
+      ]
+    },
+    {
+      "Sid": "ManageGitHubOidcProvider",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateOpenIDConnectProvider",
+        "iam:GetOpenIDConnectProvider",
+        "iam:DeleteOpenIDConnectProvider",
+        "iam:AddClientIDToOpenIDConnectProvider",
+        "iam:RemoveClientIDFromOpenIDConnectProvider",
+        "iam:UpdateOpenIDConnectProviderThumbprint",
+        "iam:TagOpenIDConnectProvider",
+        "iam:UntagOpenIDConnectProvider",
+        "iam:ListOpenIDConnectProviderTags"
+      ],
+      "Resource": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+    },
+    {
+      "Sid": "ReadDeploymentRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRoleTags",
+        "iam:ListInstanceProfilesForRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::123456789012:role/role-terraform-github-actions-dev",
+        "arn:aws:iam::123456789012:role/role-terraform-github-actions-prod"
+      ]
+    },
+    {
+      "Sid": "WriteDeploymentRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:PutRolePolicy",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:UpdateRole",
+        "iam:UpdateRoleDescription"
+      ],
+      "Resource": [
+        "arn:aws:iam::123456789012:role/role-terraform-github-actions-dev",
+        "arn:aws:iam::123456789012:role/role-terraform-github-actions-prod"
+      ]
+    },
+    {
+      "Sid": "TagAndDeleteDeploymentRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:DeleteRolePolicy",
+        "iam:DeleteRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::123456789012:role/role-terraform-github-actions-dev",
+        "arn:aws:iam::123456789012:role/role-terraform-github-actions-prod"
+      ]
+    }
+  ]
+}

@@ -1,16 +1,16 @@
 # Design and operating scope
 
-This document covers the shared design. Each project's README will cover its own architecture, inputs, deployment, cost, verification and teardown when that project is added. Module READMEs will explain their interfaces and examples.
+This document covers the shared design. Start with [00-bootstrap](../projects/00-bootstrap/README.md) for the first implemented example. Project READMEs explain setup, resources, inputs, deployment, cost and cleanup.
 
 ## Build one project at a time
 
-Start with the foundation needed for the first project. Add folders and shared abstractions only when actual code needs them. A project is ready to move on from when its behavior, deployment, verification, teardown and documentation have been checked.
+Keep the examples simple and readable. Add folders and abstractions when actual code needs them. Use Terraform formatting and validation, then review a real plan and apply in your own account. Add tests only when they serve a concrete need.
 
-The first implementation is intended to be local bootstrap. It creates deployment identities and S3 state infrastructure using an existing authorized AWS identity. Its state remains local with a private backup. HCP workspace configuration and AWS trust for HCP will be added when the first HCP project needs them.
+The first project is local bootstrap. It creates dev and prod state buckets, a GitHub OIDC provider and separate dev/prod GitHub Actions roles using an existing authorized AWS identity. Bootstrap owns those deployment roles and their permissions. Its state remains local with a private backup. Add workload permissions here as service projects need them; service projects focus on AWS resources. HCP setup will follow when a project needs it.
 
 ## Terraform structure
 
-Future code will have three responsibilities:
+Code has three responsibilities:
 
 | Part | Responsibility |
 | --- | --- |
@@ -20,13 +20,13 @@ Future code will have three responsibilities:
 
 Prefer a small amount of explicit configuration over extra tooling that hides how Terraform runs. Use direct resources, maintained upstream modules or local modules according to the project's needs. Pin upstream versions and keep third-party notices.
 
-Each project/environment/region target gets independent state and one execution owner. Global or shared account resources need an explicit home so that regional deployments do not manage the same object. HCP-managed targets will not also run apply from a CLI runner.
+Bootstrap has one local root at `projects/00-bootstrap/deployments/account/`. It uses `us-west-2` for dev and `us-east-1` for prod in the example. Future service projects can use roots such as `deployments/dev/us-west-2/` and `deployments/prod/us-east-1/`. Each target gets independent state and one execution owner. Global or shared account resources need an explicit home so that regional deployments do not manage the same object. HCP-managed targets will not also run apply from a CLI runner.
 
 ## Planned automation
 
 | Event or change | Intended behavior |
 | --- | --- |
-| S3 project: trusted branch push | Checks and plans for affected targets; no apply outside `main`. |
+| S3 project: non-main branch push | Checks and plans for affected dev targets; no apply. The supplied prod role trusts only `main`. |
 | HCP project: PR opened or updated | Native speculative plans for affected workspaces. |
 | Merge to `main` | Fresh plans and automatic apply for affected targets with changes. |
 | Deployment input change | Plan that deployment target. |
@@ -49,9 +49,9 @@ Normal deployment and replacement changes become effective when merged. The tear
 
 The public repository contains a reviewed selection of the maintained implementation, using synthetic configuration. It is not a second independently developed platform or a mirror of private Git history.
 
-Before publication, select allowed files, replace operational identifiers, inspect file contents and scan for secrets. Review documentation, diagrams and verification evidence as well as code. Public workflows must not connect to the author's AWS or HCP accounts. Cloud jobs stay inactive until a user deliberately configures their own integrations.
+Reference files use example identifiers. Configure your own account, bucket names and GitHub subjects before deploying. State, saved plans, credentials and private operational logs stay out of Git. Cloud jobs stay inactive until you deliberately configure your integrations.
 
-State which checks actually ran. Examples and intended behavior are not evidence of a deployment. No publication workflow or cross-repository synchronization is being added at this stage.
+The source bootstrap implementation was exercised with plan and apply. The public copy is checked locally with formatting and Terraform validation. Example values are not evidence of a deployment to your account. No publication workflow or cross-repository synchronization is included.
 
 ## Documentation
 
