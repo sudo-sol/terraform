@@ -59,3 +59,8 @@ backups/
 Thumbs.db
 
 # Keep .terraform.lock.hcl in Git for every deployment root.
+
+# Local Python test environments and bytecode
+__pycache__/
+*.pyc
+.venv/

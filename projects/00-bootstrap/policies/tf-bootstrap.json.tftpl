@@ -15,15 +15,15 @@
         "signin:CreateOAuth2Token"
       ],
       "Resource": [
-        "arn:aws:signin:us-west-2:123456789012:oauth2/public-client/localhost",
-        "arn:aws:signin:us-east-1:123456789012:oauth2/public-client/localhost"
+        "arn:aws:signin:us-west-2:${account_id}:oauth2/public-client/localhost",
+        "arn:aws:signin:us-east-1:${account_id}:oauth2/public-client/localhost"
       ]
     },
     {
       "Sid": "CreateDevStateBucketInOregon",
       "Effect": "Allow",
       "Action": "s3:CreateBucket",
-      "Resource": "arn:aws:s3:::terraform-state-123456789012-dev-us-west-2",
+      "Resource": "arn:aws:s3:::${dev_bucket}",
       "Condition": {
         "StringEquals": {
           "s3:LocationConstraint": "us-west-2"
@@ -34,7 +34,7 @@
       "Sid": "CreateProdStateBucketInVirginia",
       "Effect": "Allow",
       "Action": "s3:CreateBucket",
-      "Resource": "arn:aws:s3:::terraform-state-123456789012-prod-us-east-1",
+      "Resource": "arn:aws:s3:::${prod_bucket}",
       "Condition": {
         "Null": {
           "s3:LocationConstraint": "true"
@@ -65,8 +65,8 @@
         "s3:GetBucketPublicAccessBlock"
       ],
       "Resource": [
-        "arn:aws:s3:::terraform-state-123456789012-dev-us-west-2",
-        "arn:aws:s3:::terraform-state-123456789012-prod-us-east-1"
+        "arn:aws:s3:::${dev_bucket}",
+        "arn:aws:s3:::${prod_bucket}"
       ]
     },
     {
@@ -83,8 +83,8 @@
         "s3:DeleteBucket"
       ],
       "Resource": [
-        "arn:aws:s3:::terraform-state-123456789012-dev-us-west-2",
-        "arn:aws:s3:::terraform-state-123456789012-prod-us-east-1"
+        "arn:aws:s3:::${dev_bucket}",
+        "arn:aws:s3:::${prod_bucket}"
       ]
     },
     {
@@ -101,7 +101,7 @@
         "iam:UntagOpenIDConnectProvider",
         "iam:ListOpenIDConnectProviderTags"
       ],
-      "Resource": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+      "Resource": "arn:aws:iam::${account_id}:oidc-provider/token.actions.githubusercontent.com"
     },
     {
       "Sid": "ReadDeploymentRoles",
@@ -115,8 +115,8 @@
         "iam:ListInstanceProfilesForRole"
       ],
       "Resource": [
-        "arn:aws:iam::123456789012:role/role-terraform-github-actions-dev",
-        "arn:aws:iam::123456789012:role/role-terraform-github-actions-prod"
+        "arn:aws:iam::${account_id}:role/role-terraform-github-actions-dev",
+        "arn:aws:iam::${account_id}:role/role-terraform-github-actions-prod"
       ]
     },
     {
@@ -130,8 +130,8 @@
         "iam:UpdateRoleDescription"
       ],
       "Resource": [
-        "arn:aws:iam::123456789012:role/role-terraform-github-actions-dev",
-        "arn:aws:iam::123456789012:role/role-terraform-github-actions-prod"
+        "arn:aws:iam::${account_id}:role/role-terraform-github-actions-dev",
+        "arn:aws:iam::${account_id}:role/role-terraform-github-actions-prod"
       ]
     },
     {
@@ -144,8 +144,8 @@
         "iam:DeleteRole"
       ],
       "Resource": [
-        "arn:aws:iam::123456789012:role/role-terraform-github-actions-dev",
-        "arn:aws:iam::123456789012:role/role-terraform-github-actions-prod"
+        "arn:aws:iam::${account_id}:role/role-terraform-github-actions-dev",
+        "arn:aws:iam::${account_id}:role/role-terraform-github-actions-prod"
       ]
     }
   ]

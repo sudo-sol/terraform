@@ -22,7 +22,9 @@ Prefer a small amount of explicit configuration over extra tooling that hides ho
 
 Bootstrap has one local root at `projects/00-bootstrap/deployments/account/`. It uses `us-west-2` for dev and `us-east-1` for prod in the example. Future service projects can use roots such as `deployments/dev/us-west-2/` and `deployments/prod/us-east-1/`. Each target gets independent state and one execution owner. Global or shared account resources need an explicit home so that regional deployments do not manage the same object. HCP-managed targets will not also run apply from a CLI runner.
 
-## Planned automation
+## Deployment automation
+
+[01-network](../projects/01-network/README.md) uses manual dispatch for plan, apply and destroy. The table below records possible automation for future projects.
 
 | Event or change | Intended behavior |
 | --- | --- |

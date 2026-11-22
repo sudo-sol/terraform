@@ -2,11 +2,11 @@
 
 AWS infrastructure examples built with Terraform. The aim is to show clear, reusable deployment patterns that someone else can understand and adapt to their own account.
 
-Start with [00-bootstrap](projects/00-bootstrap/README.md), which creates regional state buckets, GitHub OIDC and separate dev/prod deployment roles in your AWS account. More service projects will be added one at a time. No deployment workflows are included yet.
+Start with [00-bootstrap](projects/00-bootstrap/README.md), which creates regional state buckets, GitHub OIDC and separate dev/prod deployment roles in your AWS account. Then see [01-network](projects/01-network/README.md) for Transit Gateway routing, private DNS, and inspected prod egress with an on-demand GitHub Actions workflow.
 
 ## Scope
 
-- Use plain Terraform with typed inputs. No Terragrunt or YAML infrastructure configuration.
+- Use plain Terraform with typed inputs for the core examples. [02-jenkins-terragrunt](projects/02-jenkins-terragrunt/README.md) is a draft example using Jenkins, Terragrunt, and synthetic YAML inputs.
 - Organize future code by project, then environment and region.
 - Keep deployment roots small and move useful shared logic into modules as the need appears.
 - Demonstrate local state for bootstrap, HCP Terraform for selected projects and S3 state for others.
@@ -17,13 +17,9 @@ The longer-term direction is one local bootstrap project, two or three HCP proje
 
 ## Using the examples
 
-Reference inputs and IAM policies use example account details, resource names and GitHub subjects. Replace them with your own and configure an AWS identity before deploying anything. The bootstrap README walks through that setup.
+Copy the synthetic input files to ignored local files and supply your own identifiers. The bootstrap README walks through configuring an AWS identity and rendering its IAM policy.
 
-The planned S3 workflow will plan affected dev deployments on branch pushes, then create fresh plans and apply affected dev/prod deployments on `main`. The bootstrap role trust allows all branches for dev and only `main` for prod. HCP projects will use native PR plans. These workflows will be added later; bootstrap runs locally.
-
-This repository is a reference for your own account. Configure your AWS and GitHub integrations in your copy. Future cloud jobs must remain inactive until that setup is complete, and external contributions must not receive deployment credentials or state.
-
-[Design and operating scope](docs/README.md) explains the shared structure. The first project lives in `projects/00-bootstrap/`, with its local execution root in `deployments/account/`. Shared modules and workflows will be added when needed.
+Bootstrap runs locally. The network workflow supports manually dispatched plan, apply and destroy after you configure your AWS and GitHub integrations. See [design and operating scope](docs/README.md) for the shared repository structure.
 
 ## Local files
 

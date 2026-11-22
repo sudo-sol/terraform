@@ -1,0 +1,121 @@
+name: Network infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: AWS deployment target
+        type: choice
+        options:
+          - dev
+          - prod
+        required: true
+      operation:
+        description: Terraform operation
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: terraform-01-network-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    if: inputs.target == 'dev' || (inputs.target == 'prod' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: projects/01-network/deployments/region
+    env:
+      TF_IN_AUTOMATION: 'true'
+      TARGET: ${{ inputs.target }}
+      OPERATION: ${{ inputs.operation }}
+      AWS_REGION: ${{ inputs.target == 'prod' && 'us-east-1' || 'us-west-2' }}
+      SECRET_PREFIX: ${{ inputs.target == 'prod' && 'NETWORK_PROD' || 'NETWORK_DEV' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+
+      - name: Write private Terraform inputs
+        shell: bash
+        env:
+          NETWORK_TFVARS: ${{ secrets[format('{0}_TFVARS', env.SECRET_PREFIX)] }}
+          NETWORK_BACKEND: ${{ secrets[format('{0}_BACKEND', env.SECRET_PREFIX)] }}
+          NETWORK_ROLE_ARN: ${{ secrets[format('{0}_ROLE_ARN', env.SECRET_PREFIX)] }}
+        run: |
+          if [[ -z "$NETWORK_TFVARS" || -z "$NETWORK_BACKEND" || -z "$NETWORK_ROLE_ARN" ]]; then
+            echo "::error::Configure the selected target's TFVARS, BACKEND, and ROLE_ARN repository secrets."
+            exit 1
+          fi
+
+          umask 077
+          printf '%s\n' "$NETWORK_TFVARS" > "$RUNNER_TEMP/network.tfvars.json"
+          printf '%s\n' "$NETWORK_BACKEND" > "$RUNNER_TEMP/network.tfbackend"
+          if ! account_id=$(jq -er --arg target "$TARGET" \
+            'select(.target == $target) | .account_id | strings | select(test("^[0-9]{12}$"))' \
+            "$RUNNER_TEMP/network.tfvars.json" 2>/dev/null); then
+            echo "::error::TFVARS must be JSON with the selected target and a 12-digit account_id."
+            exit 1
+          fi
+          echo "::add-mask::$account_id"
+          printf 'NETWORK_ACCOUNT_ID=%s\n' "$account_id" >> "$GITHUB_ENV"
+
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ secrets[format('{0}_ROLE_ARN', env.SECRET_PREFIX)] }}
+          aws-region: ${{ env.AWS_REGION }}
+          allowed-account-ids: ${{ env.NETWORK_ACCOUNT_ID }}
+          mask-aws-account-id: true
+
+      - name: Plan or deploy
+        shell: bash
+        run: |
+          umask 077
+          plan="$RUNNER_TEMP/network.tfplan"
+          vars="$RUNNER_TEMP/network.tfvars.json"
+          backend="$RUNNER_TEMP/network.tfbackend"
+
+          # Terraform can print account details in ordinary output and errors.
+          # Keep full output on the ephemeral runner and report only a summary.
+          run_terraform() {
+            if ! terraform "$@" > "$RUNNER_TEMP/terraform.log" 2>&1; then
+              echo "::error::Terraform ${1} failed. Run it locally with the same inputs to inspect the diagnostics."
+              return 1
+            fi
+          }
+
+          run_terraform init -input=false -lockfile=readonly \
+            -backend-config="$backend" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="key=01-network/$TARGET/$AWS_REGION/terraform.tfstate" \
+            -backend-config=use_lockfile=true -backend-config=encrypt=true
+
+          plan_flags=()
+          if [[ "$OPERATION" == destroy ]]; then
+            plan_flags=(-destroy)
+          fi
+          run_terraform plan -input=false -lock-timeout=5m -var-file="$vars" -out="$plan" "${plan_flags[@]}"
+          terraform show -json "$plan" 2>"$RUNNER_TEMP/terraform-show.log" | jq -r '
+            [.resource_changes[]?.change.actions[]] |
+            "Terraform plan: \(map(select(. == "create")) | length) to add, \(map(select(. == "update")) | length) to change, \(map(select(. == "delete")) | length) to destroy."
+          '
+
+          if [[ "$OPERATION" == apply || "$OPERATION" == destroy ]]; then
+            run_terraform apply -input=false -lock-timeout=5m "$plan"
+            echo "Terraform $OPERATION completed."
+          fi
