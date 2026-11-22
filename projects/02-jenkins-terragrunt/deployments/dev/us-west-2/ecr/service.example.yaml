@@ -1,0 +1,11 @@
+## For the sake of the demo, this module is kept simple and only creates a single ECR repository
+## In a real-world scenario, you can add more repositories to the list below and configure them as needed.
+## Additional parameters can be added to the repository configuration, such as tags, image scanning settings, and fine-tuned lifecycle policies.
+
+## Terraform ref: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_lifecycle_policy
+## AWS ref: https://docs.aws.amazon.com/AmazonECR/latest/userguide/LifecyclePolicies.html#lifecycle_policy_parameters
+
+ecr_repositories:
+    - name: jenkins-demo
+      images_to_keep: 14
+      scan_on_push: true

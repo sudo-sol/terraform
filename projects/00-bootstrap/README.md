@@ -9,7 +9,7 @@ Create the AWS foundation for your Terraform projects. Run this project locally 
 
 This example uses one AWS account for both environments. Each role has access to its own state bucket. Add the AWS service permissions needed by later projects to these roles here in bootstrap; those projects can focus on their resources.
 
-All account IDs, bucket names and GitHub subjects in the reference files are examples. Configure your own values before planning or applying. No workflows or credentials are included.
+The reference inputs use synthetic identifiers. Put your real account ID, account label, bucket names and GitHub subjects in your ignored `terraform.tfvars`.
 
 ## Layout
 
@@ -18,7 +18,7 @@ All account IDs, bucket names and GitHub subjects in the reference files are exa
 ├── README.md
 ├── policies/
 │   ├── README.md
-│   └── tf-bootstrap.json
+│   └── tf-bootstrap.json.tftpl
 ├── stack/
 │   ├── versions.tf
 │   ├── variables.tf
@@ -74,12 +74,13 @@ Edit these inputs:
 
 | Input | What to set |
 | --- | --- |
-| `account_id` | Your 12-digit AWS account ID. Both providers check this account. |
+| `account_id` | Your 12-digit AWS account ID. Both providers and the rendered IAM policy use this value. |
+| `account_name` | Optional human-readable label for the `AccountName` resource tag. |
 | `state_bucket_names` | Your globally unique dev and prod bucket names. |
 | `tags` | Your repository name and any additional tags. Ownership tags are set in `local.tf`. |
 | `github_oidc_subjects` | The actual subjects issued for the repository that will run your workflows. |
 
-The example account is `123456789012`. Replace it in your inputs and in the [bootstrap permissions policy](policies/tf-bootstrap.json). Keep the bucket names consistent between both files.
+Render the [bootstrap permissions policy](policies/README.md) from the same inputs. The account label is a tag. AWS account checks and policy ARNs require the numeric account ID.
 
 ### GitHub subjects
 
@@ -151,7 +152,7 @@ Each role can list its bucket, read/write its objects and delete `.tflock` lock 
 | `github_oidc_provider_arn` | The account-wide GitHub OIDC provider. |
 | `github_actions_role_arns` | Select the role ARN for the workflow's environment. |
 
-Future S3 roots should use distinct keys, such as `<project>/dev/us-west-2/terraform.tfstate`, and enable `use_lockfile = true`. Workflow jobs will use `id-token: write` and `aws-actions/configure-aws-credentials` with the corresponding `role-to-assume`. Workflows are not included in this project yet.
+S3 roots use distinct keys and enable `use_lockfile = true`. The [network example](../01-network/README.md) shows how to use these bucket and role outputs with a manually dispatched GitHub Actions workflow.
 
 ## State, cost and cleanup
 

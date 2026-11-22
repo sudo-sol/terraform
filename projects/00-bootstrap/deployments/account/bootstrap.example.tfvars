@@ -1,5 +1,6 @@
 # Example values only. Copy to terraform.tfvars and use your own identifiers.
-account_id = "123456789012"
+account_id   = "123456789012"
+account_name = "example-account"
 
 state_bucket_names = {
   dev  = "terraform-state-123456789012-dev-us-west-2"

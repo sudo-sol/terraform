@@ -1,16 +1,24 @@
 # Bootstrap user policy
 
-`tf-bootstrap.json` is an example permissions policy for the identity that runs bootstrap locally. It covers browser login, the two state buckets, the GitHub OIDC provider and these roles:
+`tf-bootstrap.json.tftpl` is the template for a permissions policy for the identity that runs bootstrap locally. It covers browser login, the two state buckets, the GitHub OIDC provider and these roles:
 
 - `role-terraform-github-actions-dev`
 - `role-terraform-github-actions-prod`
 
 ## Customize and attach
 
-1. Replace every `123456789012` account ID with your AWS account ID.
-2. Replace the example bucket names with the exact names in your local `terraform.tfvars`.
-3. If you change the role names in `stack/github-roles.tf`, update their ARNs in this policy too.
-4. Using an existing authorized administrator, create a customer-managed policy from this JSON and attach it to the IAM group or role used by your local bootstrap identity.
+Set `account_id` and `state_bucket_names` in your ignored `terraform.tfvars`. From the bootstrap deployment root, initialize Terraform and render the policy into a private directory:
+
+```bash
+terraform init
+mkdir -p private
+umask 077
+printf '%s\n' 'jsonencode(jsondecode(local.bootstrap_identity_policy))' |
+  terraform console -no-color |
+  python3 -c 'import json, sys; print(json.loads(sys.stdin.read()))' > private/tf-bootstrap.json
+```
+
+Review the rendered policy. Using an existing authorized administrator, create a customer-managed policy from that JSON and attach it to the IAM group or role used by your local bootstrap identity. If you change role names in `stack/github-roles.tf`, update the role ARNs in the template too.
 
 For the IAM-user login path, create the user with console access and MFA and add it to that group. The included sign-in permissions support same-computer browser login in the two example regions:
 
@@ -29,6 +37,6 @@ IAM permissions cover only GitHub's OIDC provider in your account and the two na
 
 The bootstrap identity does not receive direct state-object read/write/delete permission through this policy. Its state stays local. Emptying a populated versioned bucket during teardown needs separate object-deletion permission.
 
-Editing the JSON does not update a policy in AWS automatically. After later edits, update the policy attached to your bootstrap identity before running Terraform.
+After changing inputs or editing the template, render the policy again and update the copy attached to your bootstrap identity before running Terraform.
 
 References: [AWS CLI browser login](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html), [S3 actions](https://docs.aws.amazon.com/service-authorization/latest/reference/list_s3.html), [IAM actions](https://docs.aws.amazon.com/service-authorization/latest/reference/list_iam.html).

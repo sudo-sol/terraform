@@ -1,0 +1,179 @@
+## VPC Definitions
+
+vpc:
+  vpc-ecs-demo:
+    cidr_block: "10.42.0.0/18"
+    enable_dns_hostnames: true
+    enable_dns_support: true
+    enable_flow_logs: true
+    flow_logs_destination_type: "CLOUD_WATCH_LOGS"
+    flow_logs_log_group_name: "/aws/vpc/ecs-demo-flow-logs"
+    flow_logs_traffic_type: "ALL"
+    flow_logs_retention_days: 30
+
+    vpc_subnets:
+      public:
+        - name: "ecs-demo-public-subnet-1a"
+          cidr: "10.42.0.0/24"
+          availability_zone: "us-west-2a"
+        - name: "ecs-demo-public-subnet-1b"
+          cidr: "10.42.1.0/24"
+          availability_zone: "us-west-2b"
+      private:
+        - name: "ecs-demo-private-subnet-1a"
+          cidr: "10.42.2.0/24"
+          availability_zone: "us-west-2a"
+        - name: "ecs-demo-private-subnet-1b"
+          cidr: "10.42.3.0/24"
+          availability_zone: "us-west-2b"
+
+    internet_gateway:
+      name: "ecs-demo-igw"
+      enabled: true
+
+    nat_gateway:
+      count: 1
+      # In a production environment, one NAT Gateway per availability zone for high availability is needed.
+      # For this demo, we are using a single NAT gateway in One AZ as per requirements.
+      strategy: "single"
+      elastic_ips:
+        - "ecs-demo-eip"
+
+    # Route Tables Configuration
+    route_tables:
+      public:
+        name: "ecs-demo-public-rt"
+        routes:
+          - destination_cidr_block: "0.0.0.0/0"
+            gateway_id: "igw"
+            description: "Route to IGW"
+        subnet_associations:
+          - "ecs-demo-public-subnet-1a"
+          - "ecs-demo-public-subnet-1b"
+        tags:
+          Type: "Public"
+
+      private_1a:
+        name: "ecs-demo-private-rt-1a"
+        routes:
+          - destination_cidr_block: "0.0.0.0/0"
+            nat_gateway_id: "nat_single"
+            description: "Route to shared NAT Gateway"
+        subnet_associations:
+          - "ecs-demo-private-subnet-1a"
+        tags:
+          Type: "Private"
+          AZ: "us-west-2a"
+
+      private_1b:
+        name: "ecs-demo-private-rt-1b"
+        routes:
+          - destination_cidr_block: "0.0.0.0/0"
+            nat_gateway_id: "nat_single"
+            description: "Route to shared NAT Gateway"
+        subnet_associations:
+          - "ecs-demo-private-subnet-1b"
+        tags:
+          Type: "Private"
+          AZ: "us-west-2b"
+
+    # Security Groups
+    security_groups:
+      alb_sg:
+        name: "ecs-demo-alb-sg"
+        description: "Security group for Application Load Balancer"
+        ingress_rules:
+          - description: "HTTP from the demo VPC"
+            from_port: 80
+            to_port: 80
+            protocol: "tcp"
+            cidr_blocks: ["10.42.0.0/18"]
+        egress_rules:
+          - description: "Demo app port within the VPC"
+            from_port: 9999
+            to_port: 9999
+            protocol: "tcp"
+            cidr_blocks: ["10.42.0.0/18"]
+      app_sg:
+        name: "ecs-demo-app-sg"
+        description: "Security group for the application hosted in ECS"
+        ingress_rules:
+          - description: "Inbound traffic from ALB"
+            from_port: 9999
+            to_port: 9999
+            protocol: "tcp"
+            cidr_blocks: [ "10.42.0.0/18" ]
+        egress_rules:
+          - description: "Demo app port within the VPC"
+            from_port: 9999
+            to_port: 9999
+            protocol: "tcp"
+            cidr_blocks: [ "10.42.0.0/18" ]
+      endpoint_sg:
+        name: "vpc-endpoint-sg"
+        description: "Security group for the AWS VPC endpoints"
+        ingress_rules:
+          - description: "Inbound traffic from internal resources"
+            from_port: 443
+            to_port: 443
+            protocol: "tcp"
+            cidr_blocks: [ "10.42.0.0/18" ]
+        egress_rules:
+          - description: "Outbound traffic to internal resources"
+            from_port: 443
+            to_port: 443
+            protocol: "tcp"
+            cidr_blocks: [ "10.42.0.0/18" ]
+
+## ECS Definitions
+
+ecs:
+  ecs-demo:
+    # ECR repo URL from the ecr project (created separately, prerequisite)
+    ecr_repo_url: "000000000000.dkr.ecr.us-west-2.amazonaws.com/jenkins-demo"
+
+    flow_logs_destination_type: "CLOUD_WATCH_LOGS"
+    flow_logs_log_group_name: "/aws/ecs/ecs-demo-flow-logs"
+    flow_logs_traffic_type: "ALL"
+    flow_logs_retention_days: 30
+
+    capacity_providers:
+      - name: "FARGATE"
+        weight: 1
+        base: 1
+      - name: "FARGATE_SPOT"
+        weight: 3
+        base: 0
+
+    service:
+      name: "ecs-demo"
+      container_name: "ecs-demo"
+      container_port: 9999
+      cpu: 256
+      memory: 512
+      desired_count: 1
+      health_check_grace_period_seconds: 30
+
+    alb:
+      name: "ecs-demo"
+      internal: true
+      listener_port: 80
+      health_check_path: "/health"
+      health_check_interval_seconds: 30
+      health_check_timeout_seconds: 5
+      healthy_threshold: 2
+      unhealthy_threshold: 3
+      deregistration_delay_seconds: 30
+
+    ## Ideally in production we always want to have at least two instances of the service running at the same time for HA
+    ## For the demo purpose, we will just go with the minimum capacity.
+    autoscaling:
+      min_capacity: 1
+      max_capacity: 4
+      metrics:
+        - type: "cpu"
+          target_value: 70
+        - type: "memory"
+          target_value: 80
+      scale_in_cooldown_seconds: 300
+      scale_out_cooldown_seconds: 30

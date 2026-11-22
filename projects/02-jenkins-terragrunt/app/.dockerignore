@@ -1,0 +1,23 @@
+# Version Control
+.git
+.gitignore
+
+# Local Development & IDEs
+.vscode/
+.idea/
+
+# Environment Variables & Secrets
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+.pytest_cache/

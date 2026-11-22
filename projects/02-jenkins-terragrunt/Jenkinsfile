@@ -1,0 +1,78 @@
+pipeline {
+    agent { label 'terraform' }
+
+    options {
+        disableConcurrentBuilds()
+        skipDefaultCheckout()
+    }
+
+    parameters {
+        choice(name: 'UNIT', choices: ['ecr', 'vpc-smoke', 'ecs-demo'], description: 'Terragrunt deployment unit')
+        choice(name: 'ACTION', choices: ['validate', 'plan', 'apply', 'destroy'], description: 'Apply and destroy require approval of the saved plan')
+        string(name: 'AWS_ACCOUNT_ID', defaultValue: '', description: 'Expected AWS account ID for plans and deployments')
+        string(name: 'STATE_BUCKET', defaultValue: '', description: 'Existing S3 state bucket in us-west-2')
+    }
+
+    environment {
+        TG_AWS_ACCOUNT_ID = "${params.AWS_ACCOUNT_ID}"
+        TG_STATE_BUCKET = "${params.STATE_BUCKET}"
+        TF_IN_AUTOMATION = 'true'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                deleteDir()
+                checkout scm
+            }
+        }
+
+        stage('Validate') {
+            steps {
+                dir("projects/02-jenkins-terragrunt/deployments/dev/us-west-2/${params.UNIT}") {
+                    sh 'terragrunt run -- init -backend=false -input=false'
+                    sh 'terragrunt run --no-auto-init -- validate'
+                }
+            }
+        }
+
+        stage('Plan') {
+            when { expression { params.ACTION != 'validate' } }
+            steps {
+                script {
+                    if (!(params.AWS_ACCOUNT_ID ==~ /[0-9]{12}/) || params.AWS_ACCOUNT_ID == '000000000000' || !params.STATE_BUCKET.trim()) {
+                        error('Enter the expected AWS account ID and existing state bucket.')
+                    }
+                }
+                dir("projects/02-jenkins-terragrunt/deployments/dev/us-west-2/${params.UNIT}") {
+                    sh '''
+                        terragrunt run -- init -input=false
+                        set --
+                        if [ "$ACTION" = destroy ]; then
+                            set -- -destroy
+                        fi
+                        terragrunt run -- plan -input=false -lock-timeout=5m -out="$WORKSPACE/tfplan" "$@"
+                    '''
+                }
+            }
+        }
+
+        stage('Approve and execute') {
+            when { expression { params.ACTION in ['apply', 'destroy'] } }
+            steps {
+                timeout(time: 30, unit: 'MINUTES') {
+                    input message: "Approve ${params.ACTION} for ${params.UNIT} in account ${params.AWS_ACCOUNT_ID}?", ok: 'Execute saved plan'
+                }
+                dir("projects/02-jenkins-terragrunt/deployments/dev/us-west-2/${params.UNIT}") {
+                    sh 'terragrunt run -- apply -input=false -lock-timeout=5m "$WORKSPACE/tfplan"'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            deleteDir()
+        }
+    }
+}
