@@ -3,7 +3,7 @@ include "root" {
 }
 
 terraform {
-  source = "../../../..//stacks/ecs-demo"
+  source = "../../../../../..//projects/02-jenkins-terragrunt/stacks/ecs-demo"
 }
 
 locals {

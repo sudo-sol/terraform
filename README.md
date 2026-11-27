@@ -4,6 +4,15 @@ AWS infrastructure examples built with Terraform. The aim is to show clear, reus
 
 Start with [00-bootstrap](projects/00-bootstrap/README.md), which creates regional state buckets, GitHub OIDC and separate dev/prod deployment roles in your AWS account. Then see [01-network](projects/01-network/README.md) for Transit Gateway routing, private DNS, and inspected prod egress with an on-demand GitHub Actions workflow.
 
+## Container projects
+
+| Project | Local check and workload |
+| --- | --- |
+| [03 EKS workers](projects/03-eks-workers/README.md) | Mock-plan three private EC2 workers and validate a replicated workload designed for node drains. |
+| [04 ECS orders](projects/04-ecs-orders/README.md) | Mock-plan two load-balanced Fargate services and run a PostgreSQL persistence test across an API restart. |
+
+The [shared AWS modules](modules/aws/) provide the VPC and ECR implementations and the two-AZ dev network used by both new projects. Each deployment owns its state and resources.
+
 ## Scope
 
 - Use plain Terraform with typed inputs for the core examples. [02-jenkins-terragrunt](projects/02-jenkins-terragrunt/README.md) is a draft example using Jenkins, Terragrunt, and synthetic YAML inputs.

@@ -5,6 +5,7 @@ mock_provider "aws" {
 }
 
 variables {
+  enable_ecs_endpoints       = true
   vpc_name                   = "vpc-regression"
   tags                       = {}
   cidr_block                 = yamldecode(file("../../deployments/dev/us-west-2/ecs-demo/service.example.yaml")).vpc["vpc-ecs-demo"].cidr_block
@@ -24,7 +25,7 @@ variables {
 
 run "all_ingress_and_egress_cidrs" {
   command = plan
-  module { source = "../../modules/aws/vpc" }
+  module { source = "../../../../modules/aws/vpc" }
   variables {
     security_groups = {
       for name, sg in yamldecode(file("../../deployments/dev/us-west-2/ecs-demo/service.example.yaml")).vpc["vpc-ecs-demo"].security_groups : name => merge(sg, {
@@ -32,6 +33,10 @@ run "all_ingress_and_egress_cidrs" {
         egress_rules  = [for rule in sg.egress_rules : merge(rule, { cidr_blocks = ["10.42.0.0/24", "10.42.1.0/24", "10.42.1.0/24"] })]
       })
     }
+  }
+  assert {
+    condition     = length(aws_vpc_endpoint.ecr_api) + length(aws_vpc_endpoint.ecr_dkr) + length(aws_vpc_endpoint.logs) + length(aws_vpc_endpoint.s3) == 4
+    error_message = "The original ECS demo needs its four regional VPC endpoints."
   }
   assert {
     condition     = length(aws_vpc_security_group_ingress_rule.ingress) == 6 && toset([for rule in aws_vpc_security_group_ingress_rule.ingress : rule.cidr_ipv4]) == toset(["10.42.0.0/24", "10.42.1.0/24"])
@@ -49,14 +54,14 @@ run "all_ingress_and_egress_cidrs" {
 
 run "reject_unsupported_s3" {
   command = plan
-  module { source = "../../modules/aws/vpc" }
+  module { source = "../../../../modules/aws/vpc" }
   variables { flow_logs_destination_type = "S3" }
   expect_failures = [var.flow_logs_destination_type]
 }
 
 run "flow_logs_disabled" {
   command = plan
-  module { source = "../../modules/aws/vpc" }
+  module { source = "../../../../modules/aws/vpc" }
   variables { enable_flow_logs = false }
   assert {
     condition     = length(aws_flow_log.flow_logs) == 0 && length(aws_cloudwatch_log_group.flow_logs) == 0 && length(aws_iam_role.flow_logs) == 0

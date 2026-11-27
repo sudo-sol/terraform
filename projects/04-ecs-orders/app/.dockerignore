@@ -1,0 +1,6 @@
+*
+!Dockerfile
+!requirements.txt
+!web.py
+!api.py
+!migrate.py

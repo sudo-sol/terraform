@@ -122,3 +122,9 @@ variable "tags" {
   description = "A map of tags to apply to the VPC and its resources"
   type        = map(string)
 }
+
+variable "enable_ecs_endpoints" {
+  description = "Create the ECR, Logs and S3 endpoints used by project 02. Requires app_sg and endpoint_sg."
+  type        = bool
+  default     = false
+}

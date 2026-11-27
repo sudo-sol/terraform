@@ -3,7 +3,7 @@ include "root" {
 }
 
 terraform {
-  source = "../../../..//modules/aws/ecr"
+  source = "../../../../../../modules/aws/ecr"
 }
 
 inputs = merge(
