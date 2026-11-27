@@ -1,0 +1,4 @@
+bucket              = "terraform-state-000000000000-dev-us-west-2"
+key                 = "04-ecs-orders/dev/us-west-2/terraform.tfstate"
+region              = "us-west-2"
+allowed_account_ids = ["000000000000"]

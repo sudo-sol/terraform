@@ -1,6 +1,8 @@
 module "vpc" {
-  source   = "../../modules/aws/vpc"
+  source   = "../../../../modules/aws/vpc"
   for_each = local.vpc_configs
+
+  enable_ecs_endpoints = true
 
   ## Individual root attributes
   vpc_name                   = each.value["vpc_name"]

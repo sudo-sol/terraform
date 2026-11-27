@@ -22,6 +22,12 @@ Prefer a small amount of explicit configuration over extra tooling that hides ho
 
 Bootstrap has one local root at `projects/00-bootstrap/deployments/account/`. It uses `us-west-2` for dev and `us-east-1` for prod in the example. Future service projects can use roots such as `deployments/dev/us-west-2/` and `deployments/prod/us-east-1/`. Each target gets independent state and one execution owner. Global or shared account resources need an explicit home so that regional deployments do not manage the same object. HCP-managed targets will not also run apply from a CLI runner.
 
+## Shared AWS modules
+
+The repository-level [AWS modules](../modules/aws/) contain the VPC, ECR and two-AZ dev network configuration. Project 02 opts into its ECR, CloudWatch Logs and S3 VPC endpoints. Projects 03 and 04 use a single NAT gateway and independently provisioned VPCs. Their S3 keys, IAM roles and lab lifecycles are independent. Project 01 retains ownership of its hub-and-spoke routing and private DNS. The container examples use service-provided names.
+
+From the repository root, run `terraform fmt -recursive -check`. For changes under `modules/aws/`, also run the project 02, 03 and 04 local checks linked by the root README. Project 02's ECS composition and ALB stay together in that project.
+
 ## Deployment automation
 
 [01-network](../projects/01-network/README.md) uses manual dispatch for plan, apply and destroy. The table below records possible automation for future projects.

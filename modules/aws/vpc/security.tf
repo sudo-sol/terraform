@@ -40,6 +40,8 @@ resource "aws_vpc_security_group_egress_rule" "egress" {
 
 ## Special case Security group rules. This has to be eventually added from the YAML file
 resource "aws_vpc_security_group_egress_rule" "app_to_vpce" {
+  count = var.enable_ecs_endpoints ? 1 : 0
+
   security_group_id            = aws_security_group.security["app_sg"].id
   description                  = "Allow ECS tasks to reach VPC Endpoints securely"
   ip_protocol                  = "tcp"
@@ -49,6 +51,8 @@ resource "aws_vpc_security_group_egress_rule" "app_to_vpce" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "vpce_from_app" {
+  count = var.enable_ecs_endpoints ? 1 : 0
+
   security_group_id            = aws_security_group.security["endpoint_sg"].id
   description                  = "Allow incoming HTTPS traffic from ECS tasks"
   ip_protocol                  = "tcp"

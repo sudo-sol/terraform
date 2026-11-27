@@ -8,9 +8,12 @@ This draft combines a Jenkins pipeline, Terragrunt deployment units, reusable AW
 | `deployments/dev/us-west-2/vpc-smoke/` | Standalone VPC for trying the pipeline independently |
 | `deployments/dev/us-west-2/ecs-demo/` | VPC, private Fargate tasks, internal load balancer, logs and autoscaling |
 | `root.hcl` | Shared provider and S3 state settings |
-| `modules/aws/` and `stacks/` | Reusable Terraform modules and composed stacks |
+| [Shared AWS modules](../../modules/aws/) | VPC and ECR implementations |
+| `modules/aws/ecs/` and `stacks/` | Project-specific ECS implementation and composed stacks |
 | `Jenkinsfile` and `jenkins/` | Pipeline and local Jenkins controller image |
 | `app/` | Demo image source with `/health` and a bounded `/load` endpoint |
+
+Use a clean source checkout for Terragrunt. The ECS unit copies from the repository root so the cached Terraform stack can resolve the shared VPC. The original backend keys and module calls are preserved. Seven moved blocks map the existing endpoint and security-rule addresses to their optional instances. Review the actual state-backed plan for replacements before applying to an existing environment.
 
 ## Validate locally
 
@@ -57,6 +60,8 @@ The app's `/load` endpoint accepts integer `duration` and `intensity` parameters
 2. Set `TG_STATE_BUCKET` and `TG_AWS_ACCOUNT_ID` in your local shell. For Jenkins, enter the corresponding build parameters and configure the build agent's AWS identity separately. Keep these values out of source control. The sample repository URL uses an all-zero account placeholder, which Terragrunt replaces with the configured account ID.
 3. Each unit reads its committed `service.example.yaml`. To supply local settings, copy it to the ignored `service.local.yaml` beside it and edit the copy. The Jenkins starter uses the checked-out sample files, so adapt the job to inject local overrides if needed. The example is for fresh deployments. Existing infrastructure requires a separate state and resource migration plan.
 4. Deploy `ecr`, build the demo image from `app/`, then tag and push it as `latest` to the repository URL returned by `terragrunt run -- output -json ecr_repository_uris` from the ECR unit. Deploy `ecs-demo` after the image is available. The VPC smoke unit is optional and independent.
+
+After extracting VPC and ECR on November 27, 2026, all three Terragrunt units passed backend-disabled initialization, validation and six mock tests in total, including the original four VPC endpoints. The seven application tests also passed. Tests used Terraform 1.17.2, Terragrunt 1.2.2 and a local mirror of the locked AWS provider 6.72.0.
 
 ## Run in Jenkins
 
